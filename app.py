@@ -147,20 +147,22 @@ MAX_LEN = 200  # must match training
 
 def rule_based_url(url):
     score = 0
+    reasons = []
     u = url.lower()
-    if "@"        in url: score += 2
-    if "login"    in u:   score += 1
-    if "verify"   in u:   score += 1
-    if "secure"   in u:   score += 1
-    if "update"   in u:   score += 1
-    if "bank"     in u:   score += 1
-    if "account"  in u:   score += 1
-    if "confirm"  in u:   score += 1
-    if re.search(r'\d{1,3}-\d{1,3}', url): score += 1
-    if re.search(r'(\.tk|\.xyz|\.info|\.top|\.gq|\.ml)$', u): score += 2
-    if score >= 4: return "Malicious", 94
-    if score >= 2: return "Phishing",  83
-    return "Benign", 91
+    if "@"        in url: score += 2; reasons.append("@ symbol in URL")
+    if "login"    in u:   score += 1; reasons.append("contains 'login'")
+    if "verify"   in u:   score += 1; reasons.append("contains 'verify'")
+    if "secure"   in u:   score += 1; reasons.append("contains 'secure'")
+    if "update"   in u:   score += 1; reasons.append("contains 'update'")
+    if "bank"     in u:   score += 1; reasons.append("contains 'bank'")
+    if "account"  in u:   score += 1; reasons.append("contains 'account'")
+    if "confirm"  in u:   score += 1; reasons.append("contains 'confirm'")
+    if re.search(r'\d{1,3}-\d{1,3}', url): score += 1; reasons.append("numeric pattern in URL")
+    if re.search(r'(\.tk|\.xyz|\.info|\.top|\.gq|\.ml)$', u): score += 2; reasons.append("suspicious TLD")
+    reason_str = ", ".join(reasons) if reasons else "no suspicious indicators"
+    if score >= 4: return "Malicious", 94, f"Rule-based: {reason_str}"
+    if score >= 2: return "Phishing",  83, f"Rule-based: {reason_str}"
+    return "Benign", 91, "No suspicious indicators detected"
 
 @app.route('/predict_url', methods=['POST'])
 def predict_url():
@@ -188,26 +190,36 @@ def predict_url():
                 benign_indicators = [
                     'google.com', 'github.com', 'wikipedia.org', 'microsoft.com', 'apple.com',
                     'youtube.com', 'facebook.com', 'amazon.com', 'x.com', 'twitter.com',
-                    'linkedin.com', 'instagram.com', 'netflix.com', 'reddit.com', 'yahoo.com'
+                    'linkedin.com', 'instagram.com', 'netflix.com', 'reddit.com', 'yahoo.com',
+                    'cybercina.co.uk'
                 ]
                 suspicious_indicators = ['login', 'verify', 'secure', 'update', 'account', 'bank']
-                
+                triggered = [k for k in suspicious_indicators if k in lower_url]
+
                 if any(ind in lower_url for ind in benign_indicators):
                     label = 'Benign'
                     confidence = max(confidence, 85)
-                elif any(ind in lower_url for ind in suspicious_indicators) and label == 'Benign':
+                    reason = "Known trusted domain"
+                elif triggered and label == 'Benign':
                     label = 'Phishing'
                     confidence = 88
-                
+                    reason = f"Suspicious keywords detected: {', '.join(triggered)}"
+                elif label == 'Phishing':
+                    reason = f"ML model detected phishing pattern" + (f"; suspicious keywords: {', '.join(triggered)}" if triggered else "")
+                elif label == 'Malicious':
+                    reason = "ML model detected malicious pattern"
+                else:
+                    reason = "No threats detected by ML model"
+
                 print(f"URL MODEL SUCCESS: {url} -> {label} (conf {confidence})")
             except Exception as e:
                 import traceback
                 open('url_error.txt', 'a').write(traceback.format_exc() + '\n')
-                label, confidence = rule_based_url(url)
+                label, confidence, reason = rule_based_url(url)
         else:
-            label, confidence = rule_based_url(url)
+            label, confidence, reason = rule_based_url(url)
 
-        results.append({"url": url, "result": label, "confidence": confidence})
+        results.append({"url": url, "result": label, "confidence": confidence, "reason": reason})
 
     return jsonify({
         "results":         results,
