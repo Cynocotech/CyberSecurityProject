@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+instance/
+*.db
+out.txt
+debug_out.txt
+url_error.txt
+file_error.txt
+.DS_Store
