@@ -182,6 +182,55 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 
 /* ── RESULTS section ── */
 .results-empty{font-family:var(--font-mono);font-size:11px;color:var(--muted);letter-spacing:1px;padding:12px 0;}
+
+/* ── HAMBURGER ── */
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px;background:none;border:none;}
+.hamburger span{display:block;width:22px;height:2px;background:var(--accent);border-radius:2px;transition:all .3s;}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99;}
+.sidebar-overlay.active{display:block;}
+
+/* ── MOBILE ── */
+@media(max-width:768px){
+  .login-box{width:calc(100vw - 32px);padding:32px 20px;}
+  .login-orb{width:300px;height:300px;}
+
+  .sidebar{transform:translateX(-100%);transition:transform .3s;z-index:200;}
+  .sidebar.open{transform:translateX(0);}
+  .main-content{margin-left:0;}
+
+  .hamburger{display:flex;}
+
+  .topbar{padding:10px 16px;flex-wrap:wrap;gap:8px;}
+  .topbar-left{font-size:9px;}
+  .topbar-right{gap:10px;}
+  .topbar-clock{font-size:10px;}
+
+  .content-section{padding:16px;}
+
+  .stat-grid{grid-template-columns:1fr 1fr;}
+  .stat-num{font-size:24px;}
+
+  .grid-2,.grid-3{grid-template-columns:1fr;}
+
+  .result-row{flex-wrap:wrap;}
+  .url-text{width:100%;white-space:normal;word-break:break-all;}
+  .conf-row{min-width:80px;}
+
+  .hash-row{flex-direction:column;}
+  .hash-check-btn{width:100%;}
+
+  .data-table{display:block;overflow-x:auto;}
+
+  .section-title{font-size:18px;}
+  .scan-btn{width:100%;}
+
+  .gauge-grid{grid-template-columns:1fr 1fr;}
+}
+
+@media(max-width:400px){
+  .stat-grid{grid-template-columns:1fr;}
+  .gauge-grid{grid-template-columns:1fr;}
+}
 </style>
 </head>
 <body>
@@ -285,6 +334,9 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
         </div>
       </div>
       <div class="topbar">
+        <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
         <div class="topbar-left">CYBERCINA THREAT DETECTION // ACTIVE SESSION</div>
         <div class="topbar-right">
           <div class="threat-level"><div class="tl-dot"></div> THREAT LEVEL: MONITORING</div>
@@ -421,6 +473,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
   </div><!-- /app-layout -->
 </div><!-- /appShell -->
 
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 <div id="toast"></div>
 
 <script>
@@ -512,6 +565,13 @@ function doRegister() {
   }).catch(() => toast('// SERVER OFFLINE', 'var(--red)'));
 }
 
+function toggleSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('active');
+}
+
 function doLogout() {
   currentUser = null;
   const login = document.getElementById('loginPage');
@@ -528,6 +588,10 @@ function showSection(name, el) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('sec-' + name).classList.add('active');
   el.classList.add('active');
+  if(window.innerWidth <= 768) {
+    document.querySelector('.sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('active');
+  }
 }
 
 // ── HISTORY ──
